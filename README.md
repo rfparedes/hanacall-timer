@@ -80,6 +80,7 @@ hanacall-timer status
    1. systemReplicationStatus.py
    2. landscapeHostConfiguration.py
 * When started, a systemd service and timer are created.  The timer is enabled and will run hanacall-timer every 60 seconds
+* Only one instance of hanacall-timer will run at any given time. If HANA_CALL takes longer than 60 seconds, no additional calls will be made until the HANA_CALL's return 
 * When starting, the HANA <SIDADM> user needs to be specified as this is the user making the HANA_CALL
 * The log includes command output, command return codes and timings logged to /var/log/hanacall-timer.log
 * The output of the timings are also logged in csv format to /var/log/hanacall-timer.csv in the format:

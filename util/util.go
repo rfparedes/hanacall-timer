@@ -182,8 +182,10 @@ func RunTimer(sidadm string) error {
 
 // Usage prints help
 func Usage() {
-	fmt.Println("hanacall-timer captures HANA_CALL completion times to /var/log/hanacall-timer.log every 60s.")
+	fmt.Println("hanacall-timer captures HANA_CALL completion times every 60s.")
 	fmt.Println("")
+	fmt.Println(" hanacall-timer logs output to     : /var/log/hanacall-timer.log")
+	fmt.Println(" hanacall-timer logs timing data to: /var/log/hanacall-timer.csv")
 	fmt.Println(" Find more information at: https://github.com/rfparedes/hanacall-timer")
 	fmt.Println("")
 	fmt.Println("Start hanacall-timer:")
