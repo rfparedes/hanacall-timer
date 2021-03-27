@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+const logfile string = "/var/log/hanacall-timer.log"
+const csvfile string = "/var/log/hanacall-timer.csv"
+
 // create date header for output file
 func createHeader() string {
 	t := time.Now()
@@ -127,12 +130,17 @@ func StopService() {
 	deleteSystemd("hanacall-timer.service")
 }
 
-func RunTimer(sidadm string, logfile string) error {
+func RunTimer(sidadm string) error {
 	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0744)
 	if err != nil {
 		return fmt.Errorf("cannot open file '%s'", logfile)
 	}
+	f2, err := os.OpenFile(csvfile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0744)
+	if err != nil {
+		return fmt.Errorf("cannot open file '%s'", csvfile)
+	}
 	defer f.Close()
+	defer f2.Close()
 	_, err = f.WriteString(createHeader() + "\n")
 	if err != nil {
 		return fmt.Errorf("cannot write to file '%s'", logfile)
@@ -154,28 +162,48 @@ func RunTimer(sidadm string, logfile string) error {
 	}
 	cmd1.Wait()
 	cmd2.Wait()
-	_, err = fmt.Fprintf(f, "\nzzz #######################################################\nTime spent in systemReplicationStatus.py    : %v\n", time.Since(start1))
+	systemReplicationTime := time.Since(start1)
+	landscapeHostTime := time.Since(start2)
+	_, err = fmt.Fprintf(f, "\nzzz #######################################################\nTime spent in systemReplicationStatus.py (ms)   : %v\n", systemReplicationTime.Milliseconds())
 	if err != nil {
 		return fmt.Errorf("cannot write to file '%s'", logfile)
 	}
-	_, err = fmt.Fprintf(f, "Time spent in landscapeHostConfiguration.py : %v\n###########################################################\n", time.Since(start2))
+	_, err = fmt.Fprintf(f, "Time spent in landscapeHostConfiguration.py (ms): %v\n###########################################################\n", landscapeHostTime.Milliseconds())
 	if err != nil {
 		return fmt.Errorf("cannot write to file '%s'", logfile)
+	}
+
+	_, err = fmt.Fprintf(f2, "%v,%v,%v\n", start1.Format(time.RFC3339), systemReplicationTime.Milliseconds(), landscapeHostTime.Milliseconds())
+	if err != nil {
+		return fmt.Errorf("cannot write to file '%s'", csvfile)
 	}
 	return nil
 }
 
 // Usage prints help
 func Usage() {
-	fmt.Println("hanacall-timer: HANA_CALL timer")
-	fmt.Println("Start timer:")
+	fmt.Println("hanacall-timer captures HANA_CALL completion times to /var/log/hanacall-timer.log every 60s.")
+	fmt.Println("")
+	fmt.Println(" Find more information at: https://github.com/rfparedes/hanacall-timer")
+	fmt.Println("")
+	fmt.Println("Start hanacall-timer:")
 	fmt.Println("   hanacall-timer start --sidadm [sidadm]")
-	fmt.Println("Stop timer:")
+	fmt.Println("Stop hanacall-timer:")
 	fmt.Println("   hanacall-timer stop")
-	fmt.Println("Run timer one-shot (for systemd):")
+	fmt.Println("Status of hanacall-timer:")
+	fmt.Println("   hanacall-timer status")
+	fmt.Println("Run hanacall-timer for one collection only:")
 	fmt.Println("   hanacall-timer run --sidadm [sidadm]")
 	fmt.Println("Print hanacall-timer version: ")
 	fmt.Println("   hanacall-timer version")
 	fmt.Println("Print this message:")
 	fmt.Println("   hanacall-timer help")
+}
+
+// Check if hanacall-timer exists to return simple status
+func IsStarted() bool {
+	if _, err := os.Stat("/etc/systemd/system/hanacall-timer.timer"); err == nil {
+		return true
+	}
+	return false
 }
