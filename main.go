@@ -1,36 +1,19 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"github.com/rfparedes/hanacall-timer/util"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"time"
+
+	"github.com/rfparedes/hanacall-timer/util"
+	flag "github.com/spf13/pflag"
 )
 
-const timer string = `[Unit]
-Description=hanacall-timer Timer
-Requires=hanacall.service
-	
-[Timer]
-OnActiveSec=0
-OnUnitActiveSec=60
-AccuracySec=500msec
-	
-[Install]
-WantedBy=timers.target`
-
-const service string = `[Unit]
-Description=hanacall-timer Service
-Wants=hanacall.timer
-	
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/hanacall-timer`
-
 const logfile string = "/var/log/hanacall-timer"
+const exdir string = "/usr/local/bin"
 
 type config struct {
 	version  bool
@@ -59,7 +42,7 @@ var c = config{}
 
 func main() {
 
-	// Make sure user is running gdg out of /usr/local/bbin/
+	// Make sure user is running gdg out of /usr/local/bin
 	ex, err := os.Executable()
 	if err != nil {
 		return
@@ -79,7 +62,23 @@ func main() {
 		return
 	}
 
-	if c.run == true {
+	if c.start == true && isFlagPassed("sidadm") == true {
+		startService()
+		return
+	}
+
+	if c.stop == true {
+		stopService()
+		return
+	}
+
+	if c.run == true && isFlagPassed("sidadm") == true {
+
+		//Make sure sidadm is valid
+		if _, err := user.Lookup(c.sidadm); err != nil {
+			fmt.Printf("sidadmin '%s' is not valid\n", c.sidadm)
+			return
+		}
 
 		f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0744)
 
@@ -93,7 +92,7 @@ func main() {
 			fmt.Printf("cannot write to file '%s'", logfile)
 		}
 
-		cmd1 := exec.Command("su", "-", sidadm, "-c", "HDBSettings.sh systemReplicationStatus.py;echo rc=$?")
+		cmd1 := exec.Command("su", "-", c.sidadm, "-c", "HDBSettings.sh systemReplicationStatus.py;echo rc=$?")
 		cmd1.Stdout = f
 		start1 := time.Now()
 		err = cmd1.Start()
@@ -101,7 +100,7 @@ func main() {
 			fmt.Printf("cannot run cmd")
 		}
 
-		cmd2 := exec.Command("su", "-", sidadm, "-c", "HDBSettings.sh landscapeHostConfiguration.py;echo rc=$?")
+		cmd2 := exec.Command("su", "-", c.sidadm, "-c", "HDBSettings.sh landscapeHostConfiguration.py;echo rc=$?")
 		cmd2.Stdout = f
 		start2 := time.Now()
 		err = cmd2.Start()
@@ -111,7 +110,8 @@ func main() {
 
 		cmd1.Wait()
 		cmd2.Wait()
-		_, err = fmt.Fprintf(f, "\nTime spent in systemReplicationStatus.py    : %v\n", time.Since(start1))
+
+		_, err = fmt.Fprintf(f, "\nzzz\nTime spent in systemReplicationStatus.py    : %v\n", time.Since(start1))
 		if err != nil {
 			fmt.Printf("cannot write to file '%s'", logfile)
 		}
@@ -119,5 +119,52 @@ func main() {
 		if err != nil {
 			fmt.Printf("cannot write to file '%s'", logfile)
 		}
+		return
 	}
+
+	flag.Usage()
+}
+
+func isFlagPassed(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
+}
+
+func startService() {
+
+	timer := `[Unit]
+Description=hanacall-timer Timer
+Requires=hanacall-timer.service
+		
+[Timer]
+OnActiveSec=0
+OnUnitActiveSec=` + (fmt.Sprint(c.interval)) + "\n" +
+		`AccuracySec=500msec
+
+[Install]
+WantedBy=timers.target`
+
+	service := `[Unit]
+Description=hanacall-timer Service
+Wants=hanacall.timer
+		
+[Service]
+Type=oneshot
+ExecStart=` + exdir + "/hanacall-timer --run --sidadm " + (fmt.Sprint(c.sidadm)) + "\n"
+
+	fmt.Printf("%s is now enabled and will run every %s seconds\n", progName, fmt.Sprint(c.interval))
+	util.CreateSystemd("service", service, "hanacall-timer")
+	util.CreateSystemd("timer", timer, "hanacall-timer")
+	util.EnableSystemd("hanacall-timer.timer")
+}
+
+func stopService() {
+	util.DisableSystemd("hanacall-timer.timer")
+	util.DeleteSystemd("hanacall-timer.timer")
+	util.DeleteSystemd("hanacall-timer.service")
 }

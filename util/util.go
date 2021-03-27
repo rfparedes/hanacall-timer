@@ -10,7 +10,7 @@ import (
 // CreateHeader will create date header fors output file
 func CreateHeader() string {
 	t := time.Now()
-	return ("\nzzz ################################### " + t.Format("Mon Jan 2 03:04:05 MST 2006") + "\n")
+	return ("\nyyy\n" + t.Format("Mon Jan 2 03:04:05 MST 2006") + "\n")
 }
 
 // CreateSystemd will create service and timer files
