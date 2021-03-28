@@ -119,7 +119,7 @@ sudo hanacall-timer stop
 ### To see the current start/stop status of hanacall-timer, run
 
 ```sh
-hanacall-timer --status
+hanacall-timer status
 ```
 
 ## Build it yourself
