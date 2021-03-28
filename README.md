@@ -80,13 +80,28 @@ hanacall-timer status
    1. systemReplicationStatus.py
    2. landscapeHostConfiguration.py
 * When started, a systemd service and timer are created.  The timer is enabled and will run hanacall-timer every 60 seconds
-* Only one instance of hanacall-timer will run at any given time. If HANA_CALL takes longer than 60 seconds, no additional calls will be made until the HANA_CALL's return 
+* Only one instance of hanacall-timer will run at any given time. If HANA_CALL takes longer than 60 seconds, no additional calls will be made until the HANA_CALL's return
 * When starting, the HANA <SIDADM> user needs to be specified as this is the user making the HANA_CALL
 * The log includes command output, command return codes and timings logged to /var/log/hanacall-timer.log
 * The output of the timings are also logged in csv format to /var/log/hanacall-timer.csv in the format:
   
   `RFC3339 date-time, systemReplicationStatus.py time (ms), landscapeHostConfiguration.py time (ms)`
-  
+
+As an example, you can see the HANA_CALL timings increasing on this server from 358ms to a high of 32.538s:
+```sh
+hana11:~ # tail -f /var/log/hanacall-timer.csv
+2021-03-27T19:57:45-04:00,297,293
+2021-03-27T19:58:46-04:00,317,316
+2021-03-27T19:59:46-04:00,373,373
+2021-03-27T20:00:46-04:00,594,594
+2021-03-27T20:01:47-04:00,421,420
+2021-03-27T20:02:47-04:00,2375,2346
+2021-03-27T20:03:48-04:00,3670,3639
+2021-03-27T20:04:49-04:00,3314,3297
+2021-03-27T20:05:49-04:00,32538,32097
+2021-03-27T20:06:50-04:00,31271,31055
+```
+
 ## Usage
 
 ### To start, run
@@ -165,4 +180,3 @@ Distributed under the GPL-3.0 License. See `LICENSE` for more information.
 [issues-url]: https://github.com/rfparedes/hanacall-timer/issues
 [license-shield]: https://img.shields.io/github/license/rfparedes/hanacall-timer?color=%20%2330BA78
 [license-url]: https://github.com/rfparedes/hanacall-timer/blob/main/LICENSE
-
