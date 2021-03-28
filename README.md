@@ -87,7 +87,7 @@ hanacall-timer status
   
   `RFC3339 date-time, systemReplicationStatus.py time (ms), landscapeHostConfiguration.py time (ms)`
 
-As an example, you can see the HANA_CALL timings increasing on this server from 358ms to a high of 32.538s:
+As an example, you can see the HANA_CALL landscapeHostConfiguration timings increasing on this server from 293ms to a high of 32.097s:
 ```sh
 hana11:~ # tail -f /var/log/hanacall-timer.csv
 2021-03-27T19:57:45-04:00,297,293
